@@ -1,0 +1,23 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 16px 8%;
+  text-align: center;
+  background: #17324d;
+  color: white;
+}
+
+.site-header h1 { margin: 0 0 8px; }
+.site-header a {
+  margin: 0 12px;
+  color: white;
+  text-decoration: none;
+}

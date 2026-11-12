@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>終極密碼</title>
+    <link rel="stylesheet" href="ultimate-password.css" />
+    <script src="ultimate-password.js" defer></script>
+  </head>
+  <body>
+    <main class="app">
+      <p class="eyebrow">任務 3</p>
+      <h1>終極密碼</h1>
+      <p>目前可猜範圍</p>
+      <div id="range" class="range">1 ～ 100</div>
+
+      <div class="field">
+        <label for="guess">請輸入範圍內的整數</label>
+        <input id="guess" type="number" />
+      </div>
+
+      <div class="button-row">
+        <button id="guess-button">送出答案</button>
+        <button id="reset-button" class="secondary">重新開始</button>
+      </div>
+
+      <p id="message" class="message">請輸入第一個數字</p>
+      <p id="attempts" class="stats">已猜 0 次</p>
+    </main>
+  </body>
+</html>

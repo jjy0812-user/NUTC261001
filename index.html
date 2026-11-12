@@ -1,78 +1,1560 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Promo Banner Challenge</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <div class="page-shell">
-      <header class="challenge-header">
-        <h1>挑戰：如何炮製 <span class="token">.promo-banner</span></h1>
-      </header>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>我帶過最差的一屆：教室抓包大作戰</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1e293b;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        /* 自訂遊戲按鈕立體感與動畫 */
+        .game-btn {
+            transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35), 0 10px 20px rgba(0, 0, 0, 0.25);
+        }
+        .game-btn:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35), 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .game-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        @keyframes pulse-danger {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+        }
+        .animate-danger {
+            animation: pulse-danger 0.8s infinite;
+        }
+        @keyframes dizzy-spin {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.15); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+        .animate-dizzy-stars {
+            animation: dizzy-spin 1.2s linear infinite;
+        }
+        /* 捲軸美化 (原始碼檢視視窗) */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen w-screen bg-slate-900 text-white">
 
-      <main class="promo-layout">
-        <section class="promo-demo" aria-label="宣傳區塊示意圖">
-          <div class="demo-stage">
-            <div class="code-window">
-              <div class="top-tabs" aria-hidden="true">
-                <span class="dot"></span>
-                <span class="dot"></span>
-                <span class="dot"></span>
-              </div>
-
-              <div class="code-snippet" aria-label="HTML code sample">
-                <span class="code-line">
-                  <span class="tag">&lt;aside</span>
-                  <span class="attr"> class="promo-banner"</span>
-                  <span class="tag">&gt;</span>
-                </span>
-                <span class="code-line indent-1">
-                  <span class="tag">&lt;div&gt;</span>
-                </span>
-                <span class="code-line indent-2">
-                  <span class="tag">&lt;p&gt;</span>
-                  <span class="text">廣告文案</span>
-                  <span class="tag">&lt;/p&gt;</span>
-                </span>
-                <span class="code-line indent-1">
-                  <span class="tag">&lt;/div&gt;</span>
-                </span>
-                <span class="code-line">
-                  <span class="tag">&lt;/aside&gt;</span>
-                </span>
-              </div>
+    <!-- ==================== 頂部狀態列 (HUD) ==================== -->
+    <header class="w-full bg-slate-800/95 border-b-2 border-slate-700 px-3 py-2 sm:px-6 sm:py-3 flex flex-wrap items-center justify-between gap-2 z-20 shadow-lg">
+        <!-- 左側：教師體力條 & 全班罪惡值條 -->
+        <div class="flex flex-1 min-w-[260px] max-w-xl gap-3 sm:gap-5 items-center">
+            <!-- 老師體力 (Stamina) -->
+            <div class="flex-1">
+                <div class="flex justify-between items-center text-xs sm:text-sm font-bold mb-1">
+                    <span class="flex items-center gap-1 text-amber-300">
+                        <span>⚡</span> 老師體力
+                    </span>
+                    <span id="stamina-text" class="text-amber-200 font-mono">100%</span>
+                </div>
+                <div class="w-full h-3.5 sm:h-4 bg-slate-950 rounded-full overflow-hidden border border-slate-600 p-0.5">
+                    <div id="stamina-bar" class="h-full bg-gradient-to-r from-amber-500 to-yellow-300 rounded-full transition-all duration-75" style="width: 100%;"></div>
+                </div>
             </div>
-          </div>
-        </section>
 
-        <aside class="promo-rules" aria-label="規格說明">
-          <p class="intro">請新增宣傳區塊；CSS 依下列規格自行完成。</p>
+            <!-- 全班罪惡值 (Sin / Gluttony Gauge) -->
+            <div class="flex-1">
+                <div class="flex justify-between items-center text-xs sm:text-sm font-bold mb-1">
+                    <span class="flex items-center gap-1 text-rose-400">
+                        <span>😈</span> 全班罪惡值
+                    </span>
+                    <span id="sin-text" class="text-rose-200 font-mono">0%</span>
+                </div>
+                <div class="w-full h-3.5 sm:h-4 bg-slate-950 rounded-full overflow-hidden border border-slate-600 p-0.5">
+                    <div id="sin-bar" class="h-full bg-gradient-to-r from-purple-500 via-rose-500 to-red-500 rounded-full transition-all duration-100" style="width: 0%;"></div>
+                </div>
+            </div>
+        </div>
 
-          <div class="rule-card">
-            <div class="rule-label">手機</div>
-            <div class="rule-content">寬度 88%；內容區：按紙張文字排版</div>
-          </div>
+        <!-- 中間：距離下課鐘響倒數 & 抓包次數 -->
+        <div class="flex items-center gap-3 sm:gap-6">
+            <div class="bg-slate-900/90 border border-slate-600 rounded-xl px-3 py-1 text-center">
+                <div class="text-[10px] sm:text-xs text-slate-400 font-bold">距離下課鐘響</div>
+                <div id="timer-text" class="text-lg sm:text-2xl font-black text-emerald-400 font-mono leading-tight">60.0s</div>
+            </div>
 
-          <div class="rule-card">
-            <div class="rule-label">桌機</div>
-            <div class="rule-content">768px 後改用 Flexbox 左右排列</div>
-          </div>
+            <div class="bg-slate-900/90 border border-slate-600 rounded-xl px-3 py-1 text-center">
+                <div class="text-[10px] sm:text-xs text-slate-400 font-bold">成功抓包</div>
+                <div id="caught-hud-text" class="text-lg sm:text-2xl font-black text-sky-400 font-mono leading-tight">0 次</div>
+            </div>
+        </div>
 
-          <div class="rule-card">
-            <div class="rule-label">互動</div>
-            <div class="rule-content">按鈕 hover 時改變背景色 1.05</div>
-          </div>
+        <!-- 右側：功能按鈕 (音效切換 / 匯出VS Code原始碼) -->
+        <div class="flex items-center gap-2">
+            <button id="mute-btn" title="切換音效" class="p-2 sm:px-3 sm:py-2 bg-slate-700 hover:bg-slate-600 rounded-xl border border-slate-500 text-sm font-bold flex items-center gap-1">
+                <span id="mute-icon">🔊</span>
+                <span class="hidden md:inline">音效</span>
+            </button>
+            <button id="export-btn" title="取得 VS Code / GitHub 原始碼" class="p-2 sm:px-3 sm:py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl border border-indigo-400 text-sm font-bold flex items-center gap-1 shadow">
+                <span>💻</span>
+                <span class="hidden sm:inline">VS Code 原始碼</span>
+            </button>
+        </div>
+    </header>
 
-          <div class="rule-card motion-card">
-            <div class="rule-label">動畫</div>
-            <div class="rule-content">promo-banner 套用 fade-up · 時間 0.8 秒</div>
-          </div>
+    <!-- ==================== 主遊戲畫布容器 ==================== -->
+    <main class="relative flex-1 w-full overflow-hidden flex items-center justify-center bg-slate-950">
+        <canvas id="game-canvas" class="block w-full h-full cursor-pointer"></canvas>
 
-          <p class="limit">限制：不可修改 hero 、 event-list 或其他框架。</p>
-        </aside>
-      </main>
+        <!-- 畫面中央狀態提示徽章 (如：正在巡視學生 / 正在寫黑板) -->
+        <div id="view-indicator" class="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full font-black text-xs sm:text-sm tracking-wider shadow-lg border backdrop-blur-sm transition-all duration-200 bg-amber-500/90 text-slate-950 border-amber-300">
+            👀 視角：盯著學生巡視中 (體力快速消耗)
+        </div>
+
+        <!-- 體力 0% 眩暈 2 秒完全鎖定遮罩 -->
+        <div id="dizzy-overlay" class="hidden pointer-events-auto absolute inset-0 bg-purple-950/55 backdrop-blur-[3px] flex flex-col items-center justify-center z-20">
+            <div class="bg-slate-900/95 border-2 border-amber-400 px-7 py-5 rounded-3xl text-center shadow-2xl max-w-sm mx-4">
+                <div class="text-4xl mb-2 inline-block animate-dizzy-stars">💫😵‍💫💫</div>
+                <div class="text-xl sm:text-2xl font-black text-amber-300">體力歸零！頭暈目眩！</div>
+                <div class="text-xs sm:text-sm text-rose-300 font-bold mt-1">完全動彈不得！學生正在趁機偷吃...</div>
+                <div class="mt-3 w-full h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-600">
+                    <div id="dizzy-progress-bar" class="h-full bg-amber-400 transition-none" style="width: 100%;"></div>
+                </div>
+                <div id="dizzy-countdown-text" class="text-xs font-mono text-amber-200 mt-1.5 font-bold">眩暈剩餘 2.0 秒...</div>
+            </div>
+        </div>
+
+        <!-- ==================== 開始畫面覆蓋層 ==================== -->
+        <div id="start-screen" class="absolute inset-0 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4 z-30">
+            <div class="max-w-xl w-full bg-slate-800 border-2 border-slate-600 rounded-3xl p-6 sm:p-8 shadow-2xl text-center">
+                <div class="inline-block px-3 py-1 bg-amber-500/20 border border-amber-400/50 text-amber-300 rounded-full text-xs font-bold mb-3">
+                    🎓 教師第一人稱教室生存模擬
+                </div>
+                <h1 class="text-2xl sm:text-4xl font-black text-white tracking-tight mb-2">
+                    我帶過最差的一屆
+                </h1>
+                <h2 class="text-base sm:text-lg font-bold text-emerald-400 mb-5">
+                    — 教室偷吃抓包大作戰 —
+                </h2>
+
+                <!-- 玩法說明卡片 -->
+                <div class="bg-slate-900/80 rounded-2xl p-4 text-left text-xs sm:text-sm text-slate-200 space-y-2.5 border border-slate-700 mb-6">
+                    <div class="flex items-start gap-2.5">
+                        <span class="text-lg leading-none">⚡</span>
+                        <div><strong class="text-amber-300">瞬間偷吃無前搖：</strong>學生隨時會突然開吃（1.3~1.8秒就吃完！），點擊抓包可<span class="text-sky-300 font-bold">獎勵 +10% 體力</span>並小幅降低罪惡值！</div>
+                    </div>
+                    <div class="flex items-start gap-2.5">
+                        <span class="text-lg leading-none">💫</span>
+                        <div><strong class="text-purple-300">體力管理與眩暈：</strong>盯著學生體力消耗極快，寫黑板回復較慢；若體力降至 <span class="text-rose-400 font-bold">0% 會原地眩暈 2 秒完全不能動</span>！</div>
+                    </div>
+                    <div class="flex items-start gap-2.5">
+                        <span class="text-lg leading-none">😈</span>
+                        <div><strong class="text-rose-300">勝負關鍵：</strong>在下課鐘響前，絕不能讓<span class="text-rose-400 font-bold">「全班罪惡值」達到 100%</span>，否則算學生偷吃獲勝！</div>
+                    </div>
+                </div>
+
+                <!-- 難度選擇 -->
+                <div class="mb-6">
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">選擇班級難度</div>
+                    <div class="grid grid-cols-3 gap-2 sm:gap-3" id="difficulty-selector">
+                        <button data-diff="normal" class="diff-btn py-2.5 px-2 rounded-xl border-2 border-emerald-400 bg-emerald-500/20 text-emerald-200 font-bold text-xs sm:text-sm transition">
+                            🌱 普通班<br><span class="text-[10px] opacity-80">偶爾嘴饞</span>
+                        </button>
+                        <button data-diff="hard" class="diff-btn py-2.5 px-2 rounded-xl border-2 border-slate-600 bg-slate-700/50 text-slate-300 font-bold text-xs sm:text-sm transition">
+                            🔥 放牛班<br><span class="text-[10px] opacity-80">美食街等級</span>
+                        </button>
+                        <button data-diff="hell" class="diff-btn py-2.5 px-2 rounded-xl border-2 border-slate-600 bg-slate-700/50 text-slate-300 font-bold text-xs sm:text-sm transition">
+                            💀 地獄級班級<br><span class="text-[10px] opacity-80">全班大胃王</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button id="start-btn" class="game-btn w-full py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-lg sm:text-xl tracking-wide">
+                    🔔 鐘響！開始上課
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== 結算畫面覆蓋層 ==================== -->
+        <div id="gameover-screen" class="hidden absolute inset-0 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4 z-30">
+            <div class="max-w-lg w-full bg-slate-800 border-2 border-slate-600 rounded-3xl p-6 sm:p-8 shadow-2xl text-center">
+                <div id="end-badge" class="inline-block px-3 py-1 bg-emerald-500/20 border border-emerald-400 text-emerald-300 rounded-full text-xs font-bold mb-2">
+                    下課鐘響！平安度過這堂課
+                </div>
+                <h2 id="end-title" class="text-2xl sm:text-3xl font-black text-white mb-2">
+                    課堂結算報告
+                </h2>
+                <p id="end-comment" class="text-sm text-amber-300 font-bold mb-5">
+                    「這屆學生雖然愛吃，但還是逃不過老師的鷹眼！」
+                </p>
+
+                <!-- 數據統計網格 -->
+                <div class="grid grid-cols-2 gap-3 bg-slate-900/80 p-4 rounded-2xl border border-slate-700 mb-6 text-left">
+                    <div class="bg-slate-800/80 p-3 rounded-xl">
+                        <div class="text-xs text-slate-400">最終全班罪惡值</div>
+                        <div id="stat-sin" class="text-xl sm:text-2xl font-black text-rose-400 font-mono">0%</div>
+                    </div>
+                    <div class="bg-slate-800/80 p-3 rounded-xl">
+                        <div class="text-xs text-slate-400">成功抓包次數</div>
+                        <div id="stat-caught" class="text-xl sm:text-2xl font-black text-emerald-400 font-mono">0 次</div>
+                    </div>
+                    <div class="bg-slate-800/80 p-3 rounded-xl">
+                        <div class="text-xs text-slate-400">被偷吃得逞</div>
+                        <div id="stat-escaped" class="text-xl sm:text-2xl font-black text-amber-400 font-mono">0 次</div>
+                    </div>
+                    <div class="bg-slate-800/80 p-3 rounded-xl">
+                        <div class="text-xs text-slate-400">剩餘上課時間</div>
+                        <div id="stat-time" class="text-xl sm:text-2xl font-black text-sky-400 font-mono">0.0s</div>
+                    </div>
+                </div>
+
+                <button id="restart-btn" class="game-btn w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black text-lg">
+                    🔄 再上一堂課
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- ==================== 底部操作區 (轉身大按鈕) ==================== -->
+    <footer class="w-full bg-slate-800 border-t-2 border-slate-700 p-3 sm:p-4 flex items-center justify-center z-20">
+        <button id="turn-btn" class="game-btn w-full max-w-md py-3 sm:py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black text-base sm:text-xl flex items-center justify-center gap-3 border-2 border-emerald-300">
+            <span id="turn-btn-icon" class="text-2xl">🧑‍🏫</span>
+            <span id="turn-btn-text">轉身寫黑板 (回復體力)</span>
+            <span class="hidden sm:inline-block text-xs bg-black/30 px-2 py-0.5 rounded font-mono">Space</span>
+        </button>
+    </footer>
+
+    <!-- ==================== VS Code / GitHub 原始碼匯出彈窗 ==================== -->
+    <div id="export-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border-2 border-slate-600 rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                    <span>💻</span> 匯出至 VS Code / GitHub 專案
+                </h3>
+                <button id="close-export-btn" class="text-slate-400 hover:text-white text-2xl leading-none px-2">&times;</button>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-300 mb-3">
+                本遊戲採用<strong>零依賴單檔架構</strong>，你可以直接下載為 <code class="bg-slate-900 px-1.5 py-0.5 rounded text-emerald-300">index.html</code> 放入 VS Code 開啟（推薦搭配 Live Server 套件），並直接 <code class="bg-slate-900 px-1.5 py-0.5 rounded text-sky-300">git push</code> 到你的 GitHub Repository！
+            </p>
+            <div class="flex gap-2 mb-3">
+                <button id="download-html-btn" class="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow">
+                    <span>⬇️</span> 直接下載 index.html
+                </button>
+                <button id="copy-code-btn" class="flex-1 py-2.5 px-4 bg-sky-600 hover:bg-sky-500 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow">
+                    <span>📋</span> 複製全部程式碼
+                </button>
+            </div>
+            <div id="copy-toast" class="hidden text-center text-xs font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-500/50 py-1.5 rounded-lg mb-2">
+                ✅ 已成功複製完整程式碼到剪貼簿！可以直接貼進 VS Code 了！
+            </div>
+            <textarea id="source-code-area" readonly class="flex-1 w-full bg-slate-950 text-slate-300 font-mono text-xs p-3 rounded-xl border border-slate-700 focus:outline-none resize-none"></textarea>
+        </div>
     </div>
-  </body>
+
+    <!-- ==================== 遊戲核心邏輯腳本 ==================== -->
+    <script>
+        /**
+         * 《我帶過最差的一屆：教室抓包大作戰》
+         * 核心機制說明：
+         * 1. 無前搖瞬吃：學生從 STUDYING 直接進入 EATING（1.3~1.8秒極速進食），冷卻間隔拉長（6~14秒）。
+         * 2. 罪惡值勝負：取消板書進度，學生偷吃持續累積全班罪惡值，達 100% 則學生獲勝；撐到倒數歸零則老師獲勝。
+         * 3. 體力博弈與眩暈：看學生體力消耗快、寫黑板回復慢；抓包成功獎勵 +10% 體力；體力歸零眩暈鎖定 2 秒。
+         */
+
+        // ==================== 1. Web Audio API 音效引擎 ====================
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+                this.lastChalkTime = 0;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            toggleMute() {
+                this.muted = !this.muted;
+                return this.muted;
+            }
+
+            // 轉身風聲 (Whoosh)
+            playTurn(toBoard) {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(toBoard ? 320 : 200, now);
+                osc.frequency.exponentialRampToValueAtTime(toBoard ? 140 : 420, now + 0.16);
+
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.18);
+            }
+
+            // 粉筆寫黑板短促摩擦聲
+            playChalk() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                if (now - this.lastChalkTime < 0.14) return;
+                this.lastChalkTime = now;
+
+                const bufferSize = this.ctx.sampleRate * 0.04;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.4));
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 2400 + Math.random() * 800;
+
+                const gain = this.ctx.createGain();
+                gain.gain.value = 0.08;
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start(now);
+            }
+
+            // 成功抓包！(清脆雙音打擊)
+            playCatch(combo = 1) {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const baseFreq = 520 + Math.min(combo, 8) * 45;
+
+                [baseFreq, baseFreq * 1.35].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+                    gain.gain.setValueAtTime(0.25, now + idx * 0.07);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.22);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.07);
+                    osc.stop(now + idx * 0.07 + 0.23);
+                });
+            }
+
+            // 誤抓好學生 / 被偷吃成功 (低沉警告音)
+            playPenalty() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(170, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.28);
+
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+
+            // 體力歸零眩暈音效 (螺旋下降波)
+            playDizzy() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const lfo = this.ctx.createOscillator();
+                const lfoGain = this.ctx.createGain();
+                const mainGain = this.ctx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(480, now);
+                osc.frequency.exponentialRampToValueAtTime(160, now + 0.65);
+
+                lfo.frequency.value = 14;
+                lfoGain.gain.value = 45;
+                lfo.connect(lfoGain);
+                lfoGain.connect(osc.frequency);
+
+                mainGain.gain.setValueAtTime(0.22, now);
+                mainGain.gain.exponentialRampToValueAtTime(0.001, now + 0.68);
+
+                osc.connect(mainGain);
+                mainGain.connect(this.ctx.destination);
+                osc.start(now);
+                lfo.start(now);
+                osc.stop(now + 0.7);
+                lfo.stop(now + 0.7);
+            }
+
+            // 學生開始偷吃的細微提示音 (咀嚼/吸珍奶聲)
+            playSneakCue() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(680, now);
+                osc.frequency.exponentialRampToValueAtTime(920, now + 0.08);
+                gain.gain.setValueAtTime(0.06, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            }
+
+            // 上下課鐘聲 (噹~噹~噹~噹~)
+            playBell() {
+                if (this.muted) return;
+                this.init();
+                const notes = [659.25, 523.25, 587.33, 392.00]; // E5, C5, D5, G4
+                notes.forEach((freq, idx) => {
+                    const start = this.ctx.currentTime + idx * 0.38;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, start);
+                    gain.gain.setValueAtTime(0.22, start);
+                    gain.gain.exponentialRampToValueAtTime(0.001, start + 0.65);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(start);
+                    osc.stop(start + 0.68);
+                });
+            }
+        }
+
+        const sfx = new SoundFX();
+
+        // ==================== 2. 遊戲設定與常數 ====================
+        const SNACK_TYPES = [
+            { id: 'boba', name: '珍珠奶茶', emoji: '🧋', color: '#d97706', eatTime: 1.45 },
+            { id: 'chicken', name: '香酥雞排', emoji: '🍗', color: '#ea580c', eatTime: 1.65 },
+            { id: 'noodles', name: '科學麵', emoji: '🍜', color: '#eab308', eatTime: 1.30 },
+            { id: 'chips', name: '洋芋片', emoji: '🥔', color: '#f59e0b', eatTime: 1.40 },
+            { id: 'burger', name: '大漢堡', emoji: '🍔', color: '#b45309', eatTime: 1.75 }
+        ];
+
+        const STUDENT_PROFILES = [
+            { name: '阿豪', hairColor: '#1e293b', shirtColor: '#3b82f6', hairStyle: 'spiky' },
+            { name: '小美', hairColor: '#451a03', shirtColor: '#ec4899', hairStyle: 'pigtails' },
+            { name: '胖虎', hairColor: '#0f172a', shirtColor: '#f97316', hairStyle: 'buzz' },
+            { name: '班長', hairColor: '#1e1b4b', shirtColor: '#10b981', hairStyle: 'glasses' },
+            { name: '阿宅', hairColor: '#312e81', shirtColor: '#8b5cf6', hairStyle: 'messy' },
+            { name: '小芳', hairColor: '#713f12', shirtColor: '#f43f5e', hairStyle: 'bob' },
+            { name: '皮皮', hairColor: '#1f2937', shirtColor: '#06b6d4', hairStyle: 'cap' },
+            { name: '大雄', hairColor: '#090d16', shirtColor: '#eab308', hairStyle: 'round' }
+        ];
+
+        const BLACKBOARD_LINES = [
+            '【今日重點：微積分與人生哲理】',
+            '1. ∫ (偷吃雞排) dx = 罰站一節課 + C',
+            '2. 老師背後其實有長眼睛 (定理 3.14)',
+            '3. 珍珠奶茶熱量極高，請勿在課堂吸食',
+            '4. lim(下課鐘聲 → 0) 老師的耐心 = 0',
+            '5. 好好讀書，以後才買得起更多雞排！'
+        ];
+
+        const DIFFICULTY_CONFIG = {
+            normal: {
+                label: '普通班',
+                duration: 60,
+                staminaDrain: 17,      // 看學生每秒消耗 17% 體力 (約 5.8 秒耗盡)
+                staminaRecover: 8.5,   // 寫黑板每秒回復 8.5% 體力 (回復較慢)
+                minIdleTime: 7.5,      // 學生偷吃冷卻最短 7.5 秒
+                maxIdleTime: 14.5,     // 學生偷吃冷卻最長 14.5 秒
+                maxSimultaneous: 2,    // 最多同時 2 人偷吃
+                sinPerSecEating: 3.0,  // 偷吃中每秒持續增加的罪惡值
+                sinOnFinish: 18        // 整份吃完額外增加 18% 罪惡值
+            },
+            hard: {
+                label: '放牛班',
+                duration: 60,
+                staminaDrain: 19,
+                staminaRecover: 8.0,
+                minIdleTime: 6.0,
+                maxIdleTime: 12.5,
+                maxSimultaneous: 2,
+                sinPerSecEating: 3.8,
+                sinOnFinish: 21
+            },
+            hell: {
+                label: '地獄級班級',
+                duration: 60,
+                staminaDrain: 21,
+                staminaRecover: 7.5,
+                minIdleTime: 5.0,
+                maxIdleTime: 10.5,
+                maxSimultaneous: 3,
+                sinPerSecEating: 4.5,
+                sinOnFinish: 24
+            }
+        };
+
+        // ==================== 3. 遊戲全域狀態 ====================
+        const state = {
+            status: 'MENU', // 'MENU' | 'PLAYING' | 'GAMEOVER'
+            difficulty: 'normal',
+            facing: 'STUDENTS', // 'STUDENTS' (看學生) | 'BLACKBOARD' (寫黑板)
+            stamina: 100,
+            sin: 0, // 全班罪惡值 0 ~ 100% (達 100% 學生獲勝)
+            timeLeft: 60,
+            combo: 0,
+            maxCombo: 0,
+            caughtCount: 0,
+            escapedCount: 0,
+            chalkAnimProgress: 0, // 純視覺粉筆字循環動畫 (0 ~ 100)
+            isDizzy: false,
+            dizzyTimer: 0,
+            dizzyDuration: 2.0,
+            shakeTime: 0,
+            students: [],
+            floatingTexts: [],
+            particles: [],
+            lastFrameTime: 0
+        };
+
+        // ==================== 4. DOM 元素參照 ====================
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        const staminaBar = document.getElementById('stamina-bar');
+        const staminaText = document.getElementById('stamina-text');
+        const sinBar = document.getElementById('sin-bar');
+        const sinText = document.getElementById('sin-text');
+        const timerText = document.getElementById('timer-text');
+        const caughtHudText = document.getElementById('caught-hud-text');
+        const viewIndicator = document.getElementById('view-indicator');
+        const dizzyOverlay = document.getElementById('dizzy-overlay');
+        const dizzyProgressBar = document.getElementById('dizzy-progress-bar');
+        const dizzyCountdownText = document.getElementById('dizzy-countdown-text');
+
+        const turnBtn = document.getElementById('turn-btn');
+        const turnBtnIcon = document.getElementById('turn-btn-icon');
+        const turnBtnText = document.getElementById('turn-btn-text');
+
+        const startScreen = document.getElementById('start-screen');
+        const gameoverScreen = document.getElementById('gameover-screen');
+
+        // ==================== 5. 學生類別 (無前搖、極速偷吃 AI) ====================
+        class Student {
+            constructor(index, profile, row, col) {
+                this.index = index;
+                this.name = profile.name;
+                this.hairColor = profile.hairColor;
+                this.shirtColor = profile.shirtColor;
+                this.hairStyle = profile.hairStyle;
+                this.row = row; // 0: 前排, 1: 後排
+                this.col = col; // 0 ~ 3
+
+                // 螢幕上的碰撞判定框 (於 render 時更新)
+                this.hitbox = { x: 0, y: 0, w: 0, h: 0 };
+
+                // AI 狀態: 'STUDYING' | 'EATING' | 'CAUGHT' | 'HAPPY' (完全無 PREPARING 前搖)
+                this.aiState = 'STUDYING';
+                // 開場錯開每位學生的首次偷吃冷卻時間
+                this.stateTimer = 2.0 + Math.random() * 9.0;
+                this.currentSnack = null;
+                this.eatProgress = 0;
+                this.animOffset = Math.random() * Math.PI * 2;
+            }
+
+            randomIdleDuration() {
+                const cfg = DIFFICULTY_CONFIG[state.difficulty];
+                return cfg.minIdleTime + Math.random() * (cfg.maxIdleTime - cfg.minIdleTime);
+            }
+
+            update(dt) {
+                this.animOffset += dt * 5;
+                const cfg = DIFFICULTY_CONFIG[state.difficulty];
+
+                if (this.aiState === 'STUDYING') {
+                    this.stateTimer -= dt;
+                    if (this.stateTimer <= 0) {
+                        const activeEaters = state.students.filter(s => s.aiState === 'EATING').length;
+                        if (activeEaters < cfg.maxSimultaneous) {
+                            // 直接瞬間進入「偷吃狀態」，完全沒有前搖！
+                            this.currentSnack = SNACK_TYPES[Math.floor(Math.random() * SNACK_TYPES.length)];
+                            this.aiState = 'EATING';
+                            this.eatProgress = 0;
+                            this.stateTimer = this.currentSnack.eatTime;
+                            sfx.playSneakCue();
+
+                            if (state.facing === 'BLACKBOARD') {
+                                spawnFloatingText(
+                                    canvas.width * (0.2 + Math.random() * 0.6),
+                                    canvas.height * 0.72,
+                                    `背後傳來偷吃${this.currentSnack.name}的聲音！👂`,
+                                    '#fbbf24',
+                                    15
+                                );
+                            }
+                        } else {
+                            // 同時偷吃人數已達上限，延長冷卻再試
+                            this.stateTimer = 2.5 + Math.random() * 3.5;
+                        }
+                    }
+                } else if (this.aiState === 'EATING') {
+                    this.stateTimer -= dt;
+                    this.eatProgress = 1 - Math.max(0, this.stateTimer / this.currentSnack.eatTime);
+
+                    // 正在偷吃期間，每秒持續微幅累積全班罪惡值
+                    state.sin = Math.min(100, state.sin + cfg.sinPerSecEating * dt);
+
+                    // 產生食物碎屑粒子
+                    if (state.facing === 'STUDENTS' && Math.random() < 0.35) {
+                        spawnParticles(
+                            this.hitbox.x + this.hitbox.w * 0.5,
+                            this.hitbox.y + this.hitbox.h * 0.45,
+                            this.currentSnack.color,
+                            2
+                        );
+                    }
+
+                    // 偷吃時間結束 -> 瞬間吃完並立刻收起食物！
+                    if (this.stateTimer <= 0) {
+                        this.aiState = 'HAPPY';
+                        this.stateTimer = 0.9; // 短暫滿足表情後立刻恢復正常
+                        state.escapedCount++;
+                        state.combo = 0;
+
+                        const sinGain = cfg.sinOnFinish;
+                        state.sin = Math.min(100, state.sin + sinGain);
+                        state.shakeTime = 0.25;
+                        sfx.playPenalty();
+
+                        const msgX = state.facing === 'STUDENTS'
+                            ? this.hitbox.x + this.hitbox.w / 2
+                            : canvas.width / 2;
+                        const msgY = state.facing === 'STUDENTS'
+                            ? this.hitbox.y
+                            : canvas.height * 0.55;
+
+                        spawnFloatingText(
+                            msgX,
+                            msgY,
+                            `${this.name}火速吃光${this.currentSnack.name}！(+${sinGain}%罪惡值)`,
+                            '#fb7185',
+                            18
+                        );
+                    }
+                } else if (this.aiState === 'CAUGHT' || this.aiState === 'HAPPY') {
+                    this.stateTimer -= dt;
+                    if (this.stateTimer <= 0) {
+                        this.aiState = 'STUDYING';
+                        this.currentSnack = null;
+                        this.stateTimer = this.randomIdleDuration();
+                    }
+                }
+            }
+        }
+
+        // ==================== 6. 特效與漂浮文字系統 ====================
+        function spawnFloatingText(x, y, text, color = '#ffffff', size = 20) {
+            state.floatingTexts.push({
+                x,
+                y,
+                text,
+                color,
+                size,
+                life: 1.35,
+                maxLife: 1.35
+            });
+        }
+
+        function spawnParticles(x, y, color, count = 8) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 40 + Math.random() * 110;
+                state.particles.push({
+                    x,
+                    y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 40,
+                    color,
+                    size: 3 + Math.random() * 4,
+                    life: 0.5 + Math.random() * 0.3
+                });
+            }
+        }
+
+        // ==================== 7. 核心遊戲控制邏輯 ====================
+        function initStudents() {
+            state.students = [];
+            // 建立 2 排 x 4 列 = 8 名學生
+            for (let i = 0; i < 8; i++) {
+                const row = Math.floor(i / 4); // 0: 前排, 1: 後排
+                const col = i % 4;
+                state.students.push(new Student(i, STUDENT_PROFILES[i], row, col));
+            }
+        }
+
+        function startGame() {
+            sfx.init();
+            const cfg = DIFFICULTY_CONFIG[state.difficulty];
+            state.status = 'PLAYING';
+            state.facing = 'STUDENTS';
+            state.stamina = 100;
+            state.sin = 0;
+            state.timeLeft = cfg.duration;
+            state.combo = 0;
+            state.maxCombo = 0;
+            state.caughtCount = 0;
+            state.escapedCount = 0;
+            state.chalkAnimProgress = 0;
+            state.isDizzy = false;
+            state.dizzyTimer = 0;
+            state.floatingTexts = [];
+            state.particles = [];
+
+            initStudents();
+            updateTurnUI();
+            startScreen.classList.add('hidden');
+            gameoverScreen.classList.add('hidden');
+            dizzyOverlay.classList.add('hidden');
+            sfx.playBell();
+        }
+
+        function endGame(reason) {
+            state.status = 'GAMEOVER';
+            dizzyOverlay.classList.add('hidden');
+            sfx.playBell();
+
+            const endBadge = document.getElementById('end-badge');
+            const endTitle = document.getElementById('end-title');
+            const endComment = document.getElementById('end-comment');
+
+            if (reason === 'TIME_UP') {
+                endBadge.className = 'inline-block px-3 py-1 bg-emerald-500/20 border border-emerald-400 text-emerald-300 rounded-full text-xs font-bold mb-2';
+                endBadge.textContent = '🔔 下課鐘響！老師成功守住紀律';
+                endTitle.textContent = '老師勝利！平安下課！';
+                if (state.escapedCount === 0) {
+                    endComment.textContent = '「神級班導！全班罪惡值幾乎為零，沒有人敢造次！」';
+                } else if (state.sin < 50) {
+                    endComment.textContent = '「反應神速！成功壓制了這群大胃王學生的偷吃計畫！」';
+                } else {
+                    endComment.textContent = '「好險！在罪惡值爆表前終於等到下課鐘聲了！」';
+                }
+            } else {
+                endBadge.className = 'inline-block px-3 py-1 bg-rose-500/20 border border-rose-400 text-rose-300 rounded-full text-xs font-bold mb-2';
+                endBadge.textContent = '😈 全班罪惡值達到 100%！學生獲勝';
+                endTitle.textContent = '管教失敗！教室變夜市啦！';
+                endComment.textContent = '「這真的是我帶過最差的一屆...趁你寫黑板和眩暈時全班都吃飽了！」';
+            }
+
+            document.getElementById('stat-sin').textContent = `${Math.round(state.sin)}%`;
+            document.getElementById('stat-caught').textContent = `${state.caughtCount} 次`;
+            document.getElementById('stat-escaped').textContent = `${state.escapedCount} 次`;
+            document.getElementById('stat-time').textContent = `${state.timeLeft.toFixed(1)}s`;
+
+            gameoverScreen.classList.remove('hidden');
+        }
+
+        // 切換視角：轉頭看學生 <-> 轉身寫黑板
+        function toggleTurn() {
+            if (state.status !== 'PLAYING') return;
+            // 眩暈 2 秒期間完全不能動！
+            if (state.isDizzy) return;
+
+            if (state.facing === 'STUDENTS') {
+                state.facing = 'BLACKBOARD';
+                sfx.playTurn(true);
+            } else {
+                // 至少要有 8% 體力才能主動轉頭看學生
+                if (state.stamina < 8) {
+                    spawnFloatingText(canvas.width / 2, canvas.height / 2, '體力太低了，先寫黑板回點體力！', '#fbbf24', 18);
+                    return;
+                }
+                state.facing = 'STUDENTS';
+                sfx.playTurn(false);
+            }
+            updateTurnUI();
+        }
+
+        function updateTurnUI() {
+            if (state.isDizzy) {
+                viewIndicator.className = 'pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full font-black text-xs sm:text-sm tracking-wider shadow-lg border backdrop-blur-sm transition-all duration-200 bg-purple-600/95 text-white border-purple-300 animate-pulse';
+                viewIndicator.textContent = '💫 狀態：體力透支眩暈中 (無法操作!)';
+
+                turnBtn.className = 'game-btn w-full max-w-md py-3 sm:py-3.5 px-6 rounded-2xl bg-slate-700 text-slate-400 font-black text-base sm:text-xl flex items-center justify-center gap-3 border-2 border-slate-500';
+                turnBtnIcon.textContent = '😵‍💫';
+                turnBtnText.textContent = `眩暈硬直中 (${state.dizzyTimer.toFixed(1)}s)...`;
+                turnBtn.disabled = true;
+                return;
+            }
+
+            if (state.facing === 'STUDENTS') {
+                viewIndicator.className = 'pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full font-black text-xs sm:text-sm tracking-wider shadow-lg border backdrop-blur-sm transition-all duration-200 bg-amber-500/95 text-slate-950 border-amber-200';
+                viewIndicator.textContent = '👀 視角：盯著學生巡視中 (體力快速消耗)';
+
+                turnBtn.className = 'game-btn w-full max-w-md py-3 sm:py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-black text-base sm:text-xl flex items-center justify-center gap-3 border-2 border-emerald-300';
+                turnBtnIcon.textContent = '🧑‍🏫';
+                turnBtnText.textContent = '轉身寫黑板 (緩慢回體力)';
+                turnBtn.disabled = false;
+            } else {
+                viewIndicator.className = 'pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full font-black text-xs sm:text-sm tracking-wider shadow-lg border backdrop-blur-sm transition-all duration-200 bg-emerald-600/95 text-white border-emerald-300';
+                viewIndicator.textContent = '✍️ 視角：轉身寫黑板中 (小心背後偷吃!)';
+
+                turnBtn.className = 'game-btn w-full max-w-md py-3 sm:py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-black text-base sm:text-xl flex items-center justify-center gap-3 border-2 border-amber-300';
+                turnBtnIcon.textContent = '👀';
+                turnBtnText.textContent = '猛然轉頭抓偷吃！';
+                turnBtn.disabled = false;
+            }
+        }
+
+        // 點擊畫布抓包互動
+        function handleCanvasInteraction(clientX, clientY) {
+            if (state.status !== 'PLAYING') return;
+            // 眩暈 2 秒期間完全不能點擊抓包！
+            if (state.isDizzy) return;
+
+            if (state.facing !== 'STUDENTS') {
+                spawnFloatingText(clientX, clientY - 40, '正在寫黑板... (按下方按鈕轉頭)', '#a7f3d0', 15);
+                return;
+            }
+
+            const rect = canvas.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            // 由前排往後排檢查點擊 (避免重疊誤判)
+            let hitStudent = null;
+            for (let i = state.students.length - 1; i >= 0; i--) {
+                const s = state.students[i];
+                const hb = s.hitbox;
+                if (x >= hb.x && x <= hb.x + hb.w && y >= hb.y && y <= hb.y + hb.h) {
+                    hitStudent = s;
+                    break;
+                }
+            }
+
+            if (!hitStudent) return;
+
+            if (hitStudent.aiState === 'EATING') {
+                // 成功抓包！
+                hitStudent.aiState = 'CAUGHT';
+                hitStudent.stateTimer = 1.6;
+
+                state.caughtCount++;
+                state.combo++;
+                state.maxCombo = Math.max(state.maxCombo, state.combo);
+
+                // 獎勵老師 +10% 體力！並微幅降低 5% 全班罪惡值
+                state.stamina = Math.min(100, state.stamina + 10);
+                state.sin = Math.max(0, state.sin - 5);
+                state.shakeTime = 0.15;
+
+                sfx.playCatch(state.combo);
+                spawnParticles(x, y, '#38bdf8', 14);
+                spawnFloatingText(
+                    x,
+                    y - 20,
+                    `抓到了！${hitStudent.name}偷吃${hitStudent.currentSnack.name} (+10%體力! -5%罪惡)`,
+                    '#38bdf8',
+                    19
+                );
+            } else if (hitStudent.aiState === 'STUDYING') {
+                // 誤會乖學生！
+                state.combo = 0;
+                state.stamina = Math.max(0, state.stamina - 8);
+                sfx.playPenalty();
+                spawnFloatingText(
+                    x,
+                    y - 20,
+                    `誤會${hitStudent.name}了！人家在看書 (-8%體力)`,
+                    '#fca5a5',
+                    16
+                );
+            }
+        }
+
+        // ==================== 8. 遊戲主迴圈更新 (Update) ====================
+        function update(dt) {
+            if (state.status !== 'PLAYING') return;
+
+            const cfg = DIFFICULTY_CONFIG[state.difficulty];
+
+            // 1. 倒數計時 (時間到且罪惡值未滿 100% -> 老師獲勝)
+            state.timeLeft -= dt;
+            if (state.timeLeft <= 0) {
+                state.timeLeft = 0;
+                endGame('TIME_UP');
+                return;
+            }
+
+            // 2. 全班罪惡值達到 100% 判定 -> 學生獲勝
+            if (state.sin >= 100) {
+                state.sin = 100;
+                endGame('SIN_FULL');
+                return;
+            }
+
+            // 3. 畫面震動衰減
+            if (state.shakeTime > 0) {
+                state.shakeTime = Math.max(0, state.shakeTime - dt);
+            }
+
+            // 4. 處理 2 秒體力歸零眩暈硬直狀態
+            if (state.isDizzy) {
+                state.dizzyTimer -= dt;
+                const pct = Math.max(0, (state.dizzyTimer / state.dizzyDuration) * 100);
+                dizzyProgressBar.style.width = `${pct}%`;
+                dizzyCountdownText.textContent = `眩暈剩餘 ${Math.max(0, state.dizzyTimer).toFixed(1)} 秒...`;
+                turnBtnText.textContent = `眩暈硬直中 (${Math.max(0, state.dizzyTimer).toFixed(1)}s)...`;
+
+                if (state.dizzyTimer <= 0) {
+                    // 2 秒眩暈結束，自動強制轉身寫黑板並給予 12% 基礎喘息體力
+                    state.isDizzy = false;
+                    state.facing = 'BLACKBOARD';
+                    state.stamina = 12;
+                    dizzyOverlay.classList.add('hidden');
+                    sfx.playTurn(true);
+                    updateTurnUI();
+                }
+            } else {
+                // 正常未眩暈時的視角體力計算
+                if (state.facing === 'STUDENTS') {
+                    state.stamina -= cfg.staminaDrain * dt;
+                    if (state.stamina <= 0) {
+                        state.stamina = 0;
+                        // 體力歸零！觸發 2.0 秒原地眩暈懲罰 (完全不能動)
+                        state.isDizzy = true;
+                        state.dizzyTimer = state.dizzyDuration;
+                        sfx.playDizzy();
+                        dizzyOverlay.classList.remove('hidden');
+                        updateTurnUI();
+                    }
+                } else {
+                    // 轉身寫黑板：緩慢回復體力 + 粉筆書寫循環動畫
+                    state.stamina = Math.min(100, state.stamina + cfg.staminaRecover * dt);
+                    state.chalkAnimProgress = (state.chalkAnimProgress + 18 * dt) % 100;
+                    sfx.playChalk();
+                }
+            }
+
+            // 5. 更新所有學生 AI (即使老師眩暈或寫黑板，學生仍會繼續偷吃)
+            for (const student of state.students) {
+                student.update(dt);
+            }
+
+            // 6. 更新漂浮文字與粒子
+            for (let i = state.floatingTexts.length - 1; i >= 0; i--) {
+                const ft = state.floatingTexts[i];
+                ft.y -= 38 * dt;
+                ft.life -= dt;
+                if (ft.life <= 0) state.floatingTexts.splice(i, 1);
+            }
+
+            for (let i = state.particles.length - 1; i >= 0; i--) {
+                const p = state.particles[i];
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.vy += 260 * dt; // 重力
+                p.life -= dt;
+                if (p.life <= 0) state.particles.splice(i, 1);
+            }
+
+            // 7. 同步頂部 HUD UI
+            syncHUD();
+        }
+
+        function syncHUD() {
+            const stam = Math.round(state.stamina);
+            const sin = Math.round(state.sin);
+
+            staminaBar.style.width = `${stam}%`;
+            staminaText.textContent = `${stam}%`;
+            if (stam < 25) {
+                staminaBar.className = 'h-full bg-red-500 rounded-full animate-danger';
+            } else {
+                staminaBar.className = 'h-full bg-gradient-to-r from-amber-500 to-yellow-300 rounded-full';
+            }
+
+            sinBar.style.width = `${sin}%`;
+            sinText.textContent = `${sin}%`;
+            if (sin >= 75) {
+                sinBar.className = 'h-full bg-red-600 rounded-full animate-danger';
+            } else {
+                sinBar.className = 'h-full bg-gradient-to-r from-purple-500 via-rose-500 to-red-500 rounded-full';
+            }
+
+            timerText.textContent = `${state.timeLeft.toFixed(1)}s`;
+            timerText.className = state.timeLeft <= 10
+                ? 'text-lg sm:text-2xl font-black text-amber-300 font-mono leading-tight animate-pulse'
+                : 'text-lg sm:text-2xl font-black text-emerald-400 font-mono leading-tight';
+
+            caughtHudText.textContent = `${state.caughtCount} 次`;
+        }
+
+        // ==================== 9. 2D 畫面繪製 (Renderer) ====================
+        function resizeCanvas() {
+            const parent = canvas.parentElement;
+            canvas.width = parent.clientWidth;
+            canvas.height = parent.clientHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function render() {
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.save();
+
+            // 眩暈時的畫面天旋地轉晃動效果
+            if (state.isDizzy) {
+                const t = performance.now() * 0.012;
+                const offsetX = Math.sin(t * 1.7) * 14;
+                const offsetY = Math.cos(t * 2.1) * 10;
+                const angle = Math.sin(t) * 0.025;
+                ctx.translate(w / 2 + offsetX, h / 2 + offsetY);
+                ctx.rotate(angle);
+                ctx.translate(-w / 2, -h / 2);
+            } else if (state.shakeTime > 0) {
+                // 一般抓包/被偷吃震動效果
+                const mag = state.shakeTime * 28;
+                ctx.translate((Math.random() - 0.5) * mag, (Math.random() - 0.5) * mag);
+            }
+
+            if (state.facing === 'STUDENTS') {
+                drawClassroomStudentsView(w, h);
+            } else {
+                drawBlackboardView(w, h);
+            }
+
+            // 眩暈時在畫面四周繪製頭頂金星旋轉特效
+            if (state.isDizzy) {
+                drawDizzyStarsOverlay(w, h);
+            }
+
+            // 繪製粒子特效
+            for (const p of state.particles) {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 繪製漂浮文字
+            for (const ft of state.floatingTexts) {
+                const alpha = Math.min(1, ft.life / (ft.maxLife * 0.4));
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.font = `900 ${ft.size}px "Noto Sans TC", sans-serif`;
+                ctx.textAlign = 'center';
+                // 文字黑邊增加可讀性
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = 'rgba(15, 23, 42, 0.9)';
+                ctx.strokeText(ft.text, ft.x, ft.y);
+                ctx.fillStyle = ft.color;
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        // 視角 A：老師轉頭看向全班學生
+        function drawClassroomStudentsView(w, h) {
+            // 1. 教室牆壁與天花板背景
+            const wallGrad = ctx.createLinearGradient(0, 0, 0, h * 0.65);
+            wallGrad.addColorStop(0, '#fef3c7'); // 溫暖米黃牆面
+            wallGrad.addColorStop(1, '#fde68a');
+            ctx.fillStyle = wallGrad;
+            ctx.fillRect(0, 0, w, h * 0.65);
+
+            // 牆面下半部綠色護牆板
+            ctx.fillStyle = '#047857';
+            ctx.fillRect(0, h * 0.45, w, h * 0.2);
+
+            // 教室地板
+            const floorGrad = ctx.createLinearGradient(0, h * 0.65, 0, h);
+            floorGrad.addColorStop(0, '#92400e');
+            floorGrad.addColorStop(1, '#451a03');
+            ctx.fillStyle = floorGrad;
+            ctx.fillRect(0, h * 0.65, w, h * 0.35);
+
+            // 左側陽光窗戶
+            ctx.fillStyle = '#bae6fd';
+            ctx.strokeStyle = '#78350f';
+            ctx.lineWidth = 6;
+            const winW = Math.min(150, w * 0.16);
+            const winH = h * 0.28;
+            ctx.fillRect(w * 0.04, h * 0.12, winW, winH);
+            ctx.strokeRect(w * 0.04, h * 0.12, winW, winH);
+            // 窗框十字
+            ctx.beginPath();
+            ctx.moveTo(w * 0.04 + winW / 2, h * 0.12);
+            ctx.lineTo(w * 0.04 + winW / 2, h * 0.12 + winH);
+            ctx.moveTo(w * 0.04, h * 0.12 + winH / 2);
+            ctx.lineTo(w * 0.04 + winW, h * 0.12 + winH / 2);
+            ctx.stroke();
+
+            // 教室後方布告欄與精神標語
+            const boardW = Math.min(340, w * 0.42);
+            const boardH = h * 0.18;
+            const boardX = (w - boardW) / 2;
+            const boardY = h * 0.12;
+            ctx.fillStyle = '#065f46';
+            ctx.strokeStyle = '#92400e';
+            ctx.lineWidth = 6;
+            ctx.fillRect(boardX, boardY, boardW, boardH);
+            ctx.strokeRect(boardX, boardY, boardW, boardH);
+
+            ctx.fillStyle = '#fef08a';
+            ctx.font = `900 ${Math.max(13, Math.min(20, w * 0.022))}px "Noto Sans TC", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText('「嚴禁在教室飲食！違者沒收！」', w / 2, boardY + boardH * 0.45);
+            ctx.fillStyle = '#a7f3d0';
+            ctx.font = `700 ${Math.max(11, Math.min(14, w * 0.015))}px "Noto Sans TC", sans-serif`;
+            ctx.fillText('值日生：全體同學 | 班導巡視中', w / 2, boardY + boardH * 0.78);
+
+            // 2. 繪製兩排學生 (先畫後排 row=1，再畫前排 row=0，營造景深)
+            const rows = [1, 0];
+            for (const r of rows) {
+                const isFront = r === 0;
+                const scale = isFront ? 1.0 : 0.78;
+                const baseY = isFront ? h * 0.74 : h * 0.51;
+                const rowStudents = state.students.filter(s => s.row === r);
+
+                const totalSpan = w * (isFront ? 0.88 : 0.72);
+                const startX = (w - totalSpan) / 2;
+                const stepX = totalSpan / 4;
+
+                rowStudents.forEach((student, idx) => {
+                    const centerX = startX + stepX * (idx + 0.5);
+                    drawStudentAtDesk(student, centerX, baseY, scale, stepX * 0.85);
+                });
+            }
+
+            // 3. 講桌前景邊緣 (強化第一人稱代入感)
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(0, h - 18, w, 18);
+            ctx.fillStyle = '#92400e';
+            ctx.fillRect(0, h - 24, w, 6);
+        }
+
+        // 繪製單一學生與課桌椅
+        function drawStudentAtDesk(student, cx, baseY, scale, maxSlotW) {
+            const deskW = Math.min(165 * scale, maxSlotW);
+            const deskH = 68 * scale;
+            const headR = 26 * scale;
+
+            // 更新點擊碰撞框 (涵蓋學生頭部到課桌)
+            student.hitbox = {
+                x: cx - deskW * 0.55,
+                y: baseY - deskH - headR * 2.5,
+                w: deskW * 1.1,
+                h: deskH + headR * 2.7
+            };
+
+            ctx.save();
+
+            // 學生身體與頭部微幅呼吸/咀嚼晃動
+            let bobY = Math.sin(student.animOffset) * 2 * scale;
+            let tiltX = 0;
+            if (student.aiState === 'EATING') {
+                bobY = Math.abs(Math.sin(student.animOffset * 3.2)) * 6 * scale; // 快速大口咀嚼
+            } else if (student.aiState === 'CAUGHT') {
+                tiltX = (Math.random() - 0.5) * 6 * scale; // 嚇到發抖
+            }
+
+            const bodyY = baseY - deskH + bobY;
+
+            // 1. 學生肩膀與制服
+            ctx.fillStyle = student.shirtColor;
+            ctx.beginPath();
+            ctx.roundRect(cx - headR * 1.25 + tiltX, bodyY - headR * 0.6, headR * 2.5, headR * 1.6, 12 * scale);
+            ctx.fill();
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 2.5 * scale;
+            ctx.stroke();
+
+            // 2. 學生頭部
+            const headY = bodyY - headR * 1.35;
+            ctx.fillStyle = '#fed7aa'; // 膚色
+            ctx.beginPath();
+            ctx.arc(cx + tiltX, headY, headR, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // 頭髮造型
+            ctx.fillStyle = student.hairColor;
+            ctx.beginPath();
+            ctx.arc(cx + tiltX, headY - headR * 0.15, headR * 1.03, Math.PI, Math.PI * 2);
+            ctx.fill();
+
+            // 3. 表情繪製 (依據狀態變化)
+            ctx.fillStyle = '#0f172a';
+            const eyeOffsetX = 9 * scale;
+            const eyeY = headY - 2 * scale;
+
+            if (student.aiState === 'STUDYING') {
+                // 認真看書：眼睛往下看
+                ctx.beginPath();
+                ctx.arc(cx - eyeOffsetX, eyeY + 3 * scale, 2.8 * scale, 0, Math.PI * 2);
+                ctx.arc(cx + eyeOffsetX, eyeY + 3 * scale, 2.8 * scale, 0, Math.PI * 2);
+                ctx.fill();
+                // 微笑嘴巴
+                ctx.beginPath();
+                ctx.arc(cx, headY + 8 * scale, 4 * scale, 0, Math.PI);
+                ctx.stroke();
+            } else if (student.aiState === 'EATING') {
+                // 偷吃中！鼓鼓的臉頰 + 大口張嘴
+                ctx.fillStyle = '#fb7185';
+                ctx.beginPath();
+                ctx.arc(cx - headR * 0.65 + tiltX, headY + 6 * scale, 6 * scale, 0, Math.PI * 2);
+                ctx.arc(cx + headR * 0.65 + tiltX, headY + 6 * scale, 6 * scale, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.arc(cx - eyeOffsetX + tiltX, eyeY, 3 * scale, 0, Math.PI * 2);
+                ctx.arc(cx + eyeOffsetX + tiltX, eyeY, 3 * scale, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 張嘴吃東西
+                ctx.fillStyle = '#e11d48';
+                ctx.beginPath();
+                ctx.arc(cx + tiltX, headY + 9 * scale, 6 * scale, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (student.aiState === 'CAUGHT') {
+                // 被抓包！震驚眼 (> <) + 大哭
+                ctx.font = `900 ${14 * scale}px sans-serif`;
+                ctx.fillStyle = '#0f172a';
+                ctx.textAlign = 'center';
+                ctx.fillText('＞ ＜', cx + tiltX, eyeY + 4 * scale);
+
+                ctx.font = `900 ${18 * scale}px "Noto Sans TC", sans-serif`;
+                ctx.fillStyle = '#ef4444';
+                ctx.fillText('慘了!!', cx + tiltX, headY - headR * 1.35);
+            } else if (student.aiState === 'HAPPY') {
+                // 偷吃成功滿足臉
+                ctx.font = `900 ${15 * scale}px sans-serif`;
+                ctx.fillStyle = '#0f172a';
+                ctx.textAlign = 'center';
+                ctx.fillText('^ ▽ ^', cx, eyeY + 4 * scale);
+            }
+
+            // 4. 課桌繪製
+            const deskX = cx - deskW / 2;
+            const deskY = baseY - deskH;
+
+            // 桌身
+            ctx.fillStyle = '#b45309';
+            ctx.strokeStyle = '#451a03';
+            ctx.lineWidth = 2.5 * scale;
+            ctx.beginPath();
+            ctx.roundRect(deskX, deskY, deskW, deskH, 6 * scale);
+            ctx.fill();
+            ctx.stroke();
+
+            // 桌面亮邊
+            ctx.fillStyle = '#d97706';
+            ctx.fillRect(deskX + 2, deskY + 2, deskW - 4, 10 * scale);
+
+            // 學生姓名牌
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+            ctx.beginPath();
+            ctx.roundRect(cx - 24 * scale, deskY + deskH - 22 * scale, 48 * scale, 17 * scale, 4 * scale);
+            ctx.fill();
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = `700 ${11 * scale}px "Noto Sans TC", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText(student.name, cx, deskY + deskH - 10 * scale);
+
+            // 5. 桌上的物品 (課本 vs 偷吃的美食)
+            if (student.aiState === 'STUDYING' || student.aiState === 'CAUGHT' || student.aiState === 'HAPPY') {
+                // 攤開的課本
+                ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 1.5 * scale;
+                ctx.fillRect(cx - 26 * scale, deskY - 6 * scale, 52 * scale, 14 * scale);
+                ctx.strokeRect(cx - 26 * scale, deskY - 6 * scale, 52 * scale, 14 * scale);
+                // 書本中線
+                ctx.beginPath();
+                ctx.moveTo(cx, deskY - 6 * scale);
+                ctx.lineTo(cx, deskY + 8 * scale);
+                ctx.stroke();
+            } else if (student.aiState === 'EATING' && student.currentSnack) {
+                // 偷吃中！在嘴邊/桌上畫出明顯的美食與進食進度條
+                const snackY = headY + 14 * scale + Math.sin(student.animOffset * 4) * 3 * scale;
+                ctx.font = `${Math.round(28 * scale)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText(student.currentSnack.emoji, cx + 14 * scale, snackY);
+
+                // 頭頂上的進食進度條 (提醒老師快吃完啦！)
+                const barW = 54 * scale;
+                const barH = 7 * scale;
+                const barX = cx - barW / 2;
+                const barY = headY - headR * 1.65;
+
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+
+                ctx.fillStyle = student.eatProgress > 0.7 ? '#ef4444' : '#f59e0b';
+                ctx.fillRect(barX, barY, barW * (1 - student.eatProgress), barH);
+            }
+
+            ctx.restore();
+        }
+
+        // 視角 B：老師轉身面對綠色大黑板 (無進度條，純視覺板書動畫)
+        function drawBlackboardView(w, h) {
+            // 教室講台牆面
+            ctx.fillStyle = '#fef3c7';
+            ctx.fillRect(0, 0, w, h);
+
+            // 巨大綠色黑板
+            const marginX = w * 0.06;
+            const marginY = h * 0.08;
+            const boardW = w - marginX * 2;
+            const boardH = h * 0.74;
+
+            // 黑板木框陰影
+            ctx.fillStyle = 'rgba(0,0,0,0.25)';
+            ctx.fillRect(marginX + 6, marginY + 8, boardW, boardH);
+
+            // 黑板綠底
+            const boardGrad = ctx.createLinearGradient(marginX, marginY, marginX + boardW, marginY + boardH);
+            boardGrad.addColorStop(0, '#065f46');
+            boardGrad.addColorStop(0.5, '#047857');
+            boardGrad.addColorStop(1, '#064e3b');
+            ctx.fillStyle = boardGrad;
+            ctx.fillRect(marginX, marginY, boardW, boardH);
+
+            // 木質邊框與板溝
+            ctx.strokeStyle = '#78350f';
+            ctx.lineWidth = 12;
+            ctx.strokeRect(marginX, marginY, boardW, boardH);
+
+            // 板溝上的粉筆與板擦
+            ctx.fillStyle = '#92400e';
+            ctx.fillRect(marginX - 8, marginY + boardH, boardW + 16, 16);
+            // 板擦
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(marginX + 40, marginY + boardH - 12, 55, 12);
+            ctx.fillStyle = '#f97316';
+            ctx.fillRect(marginX + 40, marginY + boardH - 16, 55, 5);
+            // 粉筆
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(marginX + 120, marginY + boardH - 5, 28, 5);
+            ctx.fillStyle = '#fde047';
+            ctx.fillRect(marginX + 160, marginY + boardH - 5, 28, 5);
+
+            // 循環粉筆板書視覺動畫
+            const totalChars = BLACKBOARD_LINES.join('').length;
+            let charsToShow = Math.floor((state.chalkAnimProgress / 100) * totalChars);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+            const fontSize = Math.max(14, Math.min(24, w * 0.025));
+            ctx.font = `700 ${fontSize}px "Noto Sans TC", sans-serif`;
+            ctx.textAlign = 'left';
+
+            let cursorX = marginX + 28;
+            let cursorY = marginY + 48;
+
+            for (let i = 0; i < BLACKBOARD_LINES.length; i++) {
+                const line = BLACKBOARD_LINES[i];
+                const y = marginY + 48 + i * (fontSize * 1.85);
+                if (charsToShow <= 0) break;
+
+                const visiblePart = line.slice(0, charsToShow);
+                ctx.fillStyle = i === 0 ? '#fde047' : 'rgba(255, 255, 255, 0.92)';
+                ctx.fillText(visiblePart, marginX + 28, y);
+
+                if (charsToShow <= line.length) {
+                    const metrics = ctx.measureText(visiblePart);
+                    cursorX = marginX + 28 + metrics.width + 6;
+                    cursorY = y - 6;
+                }
+                charsToShow -= line.length;
+            }
+
+            // 繪製老師拿粉筆寫字的手動畫
+            if (state.status === 'PLAYING') {
+                const wiggleX = Math.sin(performance.now() * 0.03) * 4;
+                const wiggleY = Math.cos(performance.now() * 0.04) * 4;
+                const handX = cursorX + wiggleX;
+                const handY = cursorY + wiggleY;
+
+                // 粉筆
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(handX, handY);
+                ctx.lineTo(handX + 18, handY + 14);
+                ctx.stroke();
+
+                // 手掌簡筆畫
+                ctx.fillStyle = '#fed7aa';
+                ctx.beginPath();
+                ctx.arc(handX + 26, handY + 22, 16, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 右下角提示文字
+            ctx.fillStyle = 'rgba(255,255,255,0.75)';
+            ctx.font = '700 14px "Noto Sans TC", sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText('專心寫板書喘口氣中... 注意聽背後動靜！', marginX + boardW - 20, marginY + boardH - 18);
+        }
+
+        // 繪製體力 0% 眩暈時的旋轉星星與暗角特效
+        function drawDizzyStarsOverlay(w, h) {
+            ctx.save();
+            // 紫色暈眩暗角
+            const radGrad = ctx.createRadialGradient(w / 2, h / 2, w * 0.15, w / 2, h / 2, w * 0.65);
+            radGrad.addColorStop(0, 'rgba(88, 28, 135, 0)');
+            radGrad.addColorStop(1, 'rgba(59, 7, 100, 0.55)');
+            ctx.fillStyle = radGrad;
+            ctx.fillRect(0, 0, w, h);
+
+            // 環繞畫面中央旋轉的金色小星星
+            const t = performance.now() * 0.005;
+            const starCount = 6;
+            const radiusX = Math.min(220, w * 0.32);
+            const radiusY = 65;
+            ctx.font = '28px sans-serif';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < starCount; i++) {
+                const angle = t + (i * Math.PI * 2) / starCount;
+                const sx = w / 2 + Math.cos(angle) * radiusX;
+                const sy = h * 0.24 + Math.sin(angle) * radiusY;
+                ctx.fillText('⭐', sx, sy);
+            }
+            ctx.restore();
+        }
+
+        // ==================== 10. 動畫主迴圈 ====================
+        function gameLoop(timestamp) {
+            if (!state.lastFrameTime) state.lastFrameTime = timestamp;
+            const dt = Math.min(0.1, (timestamp - state.lastFrameTime) / 1000);
+            state.lastFrameTime = timestamp;
+
+            update(dt);
+            render();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ==================== 11. 事件監聽綁定 ====================
+        // 轉身按鈕點擊
+        turnBtn.addEventListener('click', toggleTurn);
+
+        // 空白鍵快捷轉身
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (state.status === 'PLAYING') {
+                    toggleTurn();
+                }
+            }
+        });
+
+        // 畫布點擊 / 觸控抓包
+        canvas.addEventListener('pointerdown', (e) => {
+            handleCanvasInteraction(e.clientX, e.clientY);
+        });
+
+        // 難度選擇按鈕
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.diff-btn').forEach(b => {
+                    b.className = 'diff-btn py-2.5 px-2 rounded-xl border-2 border-slate-600 bg-slate-700/50 text-slate-300 font-bold text-xs sm:text-sm transition';
+                });
+                btn.className = 'diff-btn py-2.5 px-2 rounded-xl border-2 border-emerald-400 bg-emerald-500/20 text-emerald-200 font-bold text-xs sm:text-sm transition';
+                state.difficulty = btn.dataset.diff;
+            });
+        });
+
+        // 開始與重新開始按鈕
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+
+        // 音效靜音按鈕
+        document.getElementById('mute-btn').addEventListener('click', () => {
+            const isMuted = sfx.toggleMute();
+            document.getElementById('mute-icon').textContent = isMuted ? '🔇' : '🔊';
+        });
+
+        // VS Code / GitHub 原始碼匯出功能
+        const exportModal = document.getElementById('export-modal');
+        const sourceCodeArea = document.getElementById('source-code-area');
+        const copyToast = document.getElementById('copy-toast');
+
+        document.getElementById('export-btn').addEventListener('click', () => {
+            sourceCodeArea.value = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+            copyToast.classList.add('hidden');
+            exportModal.classList.remove('hidden');
+        });
+
+        document.getElementById('close-export-btn').addEventListener('click', () => {
+            exportModal.classList.add('hidden');
+        });
+
+        document.getElementById('copy-code-btn').addEventListener('click', () => {
+            sourceCodeArea.select();
+            document.execCommand('copy');
+            copyToast.classList.remove('hidden');
+        });
+
+        document.getElementById('download-html-btn').addEventListener('click', () => {
+            const fullHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+            const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'index.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // 啟動渲染迴圈
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
 </html>

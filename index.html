@@ -227,9 +227,14 @@
                     </div>
                 </div>
 
-                <button id="restart-btn" class="game-btn w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black text-lg">
-                    🔄 再上一堂課
-                </button>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button id="restart-btn" class="game-btn w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black text-lg">
+                        🔄 再上一堂課
+                    </button>
+                    <button id="home-btn" class="game-btn w-full py-3.5 rounded-2xl bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-300 hover:to-cyan-400 text-slate-950 font-black text-lg">
+                        🏠 回首頁 / 選擇模式
+                    </button>
+                </div>
             </div>
         </div>
     </main>
@@ -753,6 +758,22 @@
             gameoverScreen.classList.add('hidden');
             dizzyOverlay.classList.add('hidden');
             sfx.playBell();
+        }
+
+        function goToHomeScreen() {
+            state.status = 'READY';
+            state.stamina = 100;
+            state.sin = 0;
+            state.timeLeft = 60;
+            state.facing = 'STUDENTS';
+            state.isDizzy = false;
+            state.dizzyTimer = 0;
+            state.floatingTexts = [];
+            state.particles = [];
+            updateTurnUI();
+            startScreen.classList.remove('hidden');
+            gameoverScreen.classList.add('hidden');
+            dizzyOverlay.classList.add('hidden');
         }
 
         function endGame(reason) {
@@ -1509,9 +1530,10 @@
             });
         });
 
-        // 開始與重新開始按鈕
+        // 開始、重新開始與回首頁按鈕
         document.getElementById('start-btn').addEventListener('click', startGame);
         document.getElementById('restart-btn').addEventListener('click', startGame);
+        document.getElementById('home-btn').addEventListener('click', goToHomeScreen);
 
         // 音效靜音按鈕
         document.getElementById('mute-btn').addEventListener('click', () => {

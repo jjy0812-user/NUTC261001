@@ -39,13 +39,19 @@ function checkGuess() {
     message.textContent = '答對了！終極密碼就是 ' + answer;
     message.className = 'message';
   } else if (guess < answer) {
-    lower = guess + 1;
+    lower = Math.max(lower, guess + 1);
     message.textContent = guess + ' 太小，新的範圍是 ' + lower + ' ～ ' + upper;
     message.className = 'message';
   } else {
-    upper = guess - 1;
+    upper = Math.min(upper, guess - 1);
     message.textContent = guess + ' 太大，新的範圍是 ' + lower + ' ～ ' + upper;
     message.className = 'message';
+  }
+
+  if (lower > upper) {
+    finished = true;
+    message.textContent = '這個範圍已收斂到無效狀態，請重新開始。';
+    message.className = 'message error';
   }
 
   renderGame();
